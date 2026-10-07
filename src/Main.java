@@ -54,7 +54,12 @@ public class Main {
             if (client.enviarMensagem(mensagem)) {
                 String resposta = client.receberResposta();
                 if (resposta != null) {
-                    System.out.println("[Servidor] " + resposta);
+                    String opcao = entradaUsuario.split(";", 2)[0].trim();
+                    if (opcao.equals("4")) {
+                        abrirImagemRecebida(resposta);
+                    } else {
+                        System.out.println("[Servidor] " + resposta);
+                    }
                 } else {
                     break;
                 }
@@ -72,58 +77,55 @@ public class Main {
         System.out.println("1 - Somar");
         System.out.println("2 - Subtrair");
         System.out.println("3 - Multiplicar");
-        System.out.println("4 - Enviar Imagem");
+        System.out.println("4 - Solicitar imagem ao servidor");
         System.out.println("0 - Encerrar Conexão");
         System.out.println("Formato: opcao;valor1;valor2  (ex: 1;2;3)");
-        System.out.println("Para imagem: 4;caminho/da/imagem.png");
+        System.out.println("Para imagem: digite 4");
     }
 
     /**
-     * Recebe a linha digitada pelo usuário (ex: "1;2;3" ou "4;foto.png")
+     * Recebe a linha digitada pelo usuário (ex: "1;2;3" ou "4")
      * e devolve a mensagem pronta para envio ao servidor.
      *
      * Para as opções 1, 2 e 3, a linha já está no formato que o
      * servidor espera, então é enviada como veio (a lógica de somar/
      * subtrair/multiplicar fica por conta do servidor).
      *
-     * Para a opção 4, o segundo campo é tratado como um caminho de
-     * arquivo local: o conteúdo é lido, convertido para base64 (para
-     * poder trafegar como texto numa única linha) e reempacotado como
-     * "opcao;nome_do_arquivo;dados_em_base64".
+     * Para a opção 4, envia somente o comando. A imagem fica armazenada
+     * no servidor e será recebida na resposta.
      */
     private static String prepararMensagem(String entrada) {
         String[] partes = entrada.split(";");
         String opcao = partes[0].trim();
 
         if (opcao.equals("4")) {
-            if (partes.length < 2 || partes[1].trim().isEmpty()) {
-                System.out.println("Informe o caminho da imagem. Ex: 4;caminho/imagem.png");
-                return null;
-            }
-
-            String caminho = partes[1].trim();
-            Path arquivo = Path.of(caminho);
-
-            if (!Files.isRegularFile(arquivo)) {
-                System.out.println("Arquivo não encontrado: " + caminho);
-                return null;
-            }
-
-            try {
-                byte[] conteudo = Files.readAllBytes(arquivo);
-                // Base64.getEncoder() (padrão) não insere quebras de
-                // linha no resultado, então é seguro para um
-                // protocolo baseado em linhas.
-                String dadosB64 = Base64.getEncoder().encodeToString(conteudo);
-                String nomeArquivo = arquivo.getFileName().toString();
-                return "4;" + nomeArquivo + ";" + dadosB64;
-            } catch (IOException e) {
-                System.out.println("Erro ao ler o arquivo: " + e.getMessage());
-                return null;
-            }
+            return "4";
         }
 
         // Opções 1, 2, 3 (e qualquer outra que o servidor saiba tratar)
         return entrada;
+    }
+
+    /** Decodifica a resposta do servidor e abre o arquivo temporário no Firefox. */
+    private static void abrirImagemRecebida(String resposta) {
+        if (!resposta.startsWith("OK;")) {
+            System.out.println("[Servidor] " + resposta);
+            return;
+        }
+
+        String dadosBase64 = resposta.substring("OK;".length());
+        try {
+            byte[] imagem = Base64.getDecoder().decode(dadosBase64);
+            Path arquivoTemporario = Files.createTempFile("imagem-servidor-", ".jpg");
+            Files.write(arquivoTemporario, imagem);
+
+            new ProcessBuilder("firefox", arquivoTemporario.toAbsolutePath().toString()).start();
+            System.out.println("Imagem aberta no Firefox.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("O servidor enviou dados Base64 inválidos.");
+        } catch (IOException e) {
+            System.out.println("Não foi possível salvar a imagem ou iniciar o Firefox: "
+                    + e.getMessage());
+        }
     }
 }
