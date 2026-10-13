@@ -19,26 +19,17 @@ public class ClientJava {
         this.porta = porta;
     }
 
-    /**
-     * Estabelece a conexão com o servidor.
-     */
     public void conectar() {
         try {
             socket = new Socket(host, porta);
-            entrada = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            saida = new PrintWriter(
-                    new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
+            entrada = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            saida = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
             System.out.println("O cliente se conectou ao servidor!");
         } catch (IOException e) {
             System.out.println("Erro ao conectar: " + e.getMessage());
         }
     }
 
-    /**
-     * Envia uma mensagem para o servidor (adiciona a quebra de linha
-     * automaticamente, igual o Client.py fazia com "mensagem + \n").
-     */
     public boolean enviarMensagem(String mensagem) {
         if (!estaConectado()) {
             System.out.println("Cliente não está conectado. Chame conectar() primeiro.");
@@ -53,10 +44,6 @@ public class ClientJava {
         return true;
     }
 
-    /**
-     * Lê exatamente uma linha do servidor, bloqueando até ela chegar.
-     * Equivalente ao receber_linha() do Client.py.
-     */
     public String receberLinha() {
         if (!estaConectado()) return null;
         try {
@@ -121,9 +108,6 @@ public class ClientJava {
         return receberResposta(200);
     }
 
-    /**
-     * Fecha a conexão com o servidor.
-     */
     public void fechar() {
         try {
             if (socket != null) {
@@ -135,9 +119,6 @@ public class ClientJava {
         System.out.println("Conexão encerrada.");
     }
 
-    /**
-     * Verifica se o socket ainda é válido.
-     */
     public boolean estaConectado() {
         return socket != null && !socket.isClosed();
     }
