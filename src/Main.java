@@ -100,6 +100,7 @@ public class Main {
 
     /** Decodifica a resposta do servidor e abre o arquivo temporário no Firefox. */
     private static void abrirImagemRecebida(String resposta) {
+        String navegador = "google-chrome";
         if (!resposta.startsWith("OK;")) {
             System.out.println("[Servidor] " + resposta);
             return;
@@ -111,12 +112,12 @@ public class Main {
             Path arquivoTemporario = Files.createTempFile("imagem-servidor-", ".jpg");
             Files.write(arquivoTemporario, imagem);
 
-            new ProcessBuilder("firefox", arquivoTemporario.toAbsolutePath().toString()).start();
-            System.out.println("Imagem aberta no Firefox.");
+            new ProcessBuilder(navegador, arquivoTemporario.toAbsolutePath().toString()).start();
+            System.out.println("Imagem aberta no " + navegador);
         } catch (IllegalArgumentException e) {
             System.out.println("O servidor enviou dados Base64 inválidos.");
         } catch (IOException e) {
-            System.out.println("Não foi possível salvar a imagem ou iniciar o Firefox: "
+            System.out.println("Não foi possível salvar a imagem ou iniciar o " + navegador + ": "
                     + e.getMessage());
         }
     }
